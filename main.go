@@ -1,11 +1,15 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"os"
 
 	"github.com/ayulemd/gator/internal/config"
 )
+
+type state struct {
+	cfg *config.Config
+}
 
 func main() {
 	gatorConfig, err := config.Read()
@@ -13,14 +17,22 @@ func main() {
 		log.Fatalf("error: %v", err)
 	}
 
-	fmt.Printf("%v\n", gatorConfig)
+	appState := state{&gatorConfig}
+	commandsMap := make(map[string]func(*state, command) error)
 
-	gatorConfig.SetUser("ayulemd")
+	appCommands := commands{commandsMap}
+	appCommands.register("login", handlerLogin)
 
-	gatorConfig, err = config.Read()
-	if err != nil {
-		log.Fatalf("error: %v", err)
+	cliArgs := os.Args
+
+	if len(cliArgs) < 2 {
+		log.Fatal("Usage: cli <command> [args...]")
 	}
 
-	fmt.Printf("%v\n", gatorConfig)
+	cmd := command{cliArgs[1], cliArgs[2:]}
+
+	err = appCommands.run(&appState, cmd)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
