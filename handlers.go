@@ -59,9 +59,12 @@ func handlerRegister(s *state, cmd command) error {
 		if pqErr, ok := err.(*pq.Error); ok {
 			if pqErr.Code == "23505" {
 				fmt.Println(pqErr.Message)
-				os.Exit(1)
 			}
+		} else {
+			fmt.Println("unknown error when creating user")
 		}
+
+		os.Exit(1)
 	}
 
 	err = s.cfg.SetUser(user.Name)
@@ -72,4 +75,21 @@ func handlerRegister(s *state, cmd command) error {
 	log.Printf("Created user: %+v", user)
 
 	return nil
+}
+
+func handlerResetUsers(s *state, cmd command) error {
+	err := s.db.ResetUsers(context.Background())
+	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			fmt.Println(pqErr.Message)
+		} else {
+			fmt.Println("unknown error when reseting users")
+		}
+
+		os.Exit(1)
+	}
+
+	fmt.Println("Users reset")
+
+	return err
 }
