@@ -37,6 +37,7 @@ func main() {
 	appCommands.register("register", handlerRegister)
 	appCommands.register("reset", handlerResetUsers)
 	appCommands.register("users", handlerGetUsers)
+	appCommands.register("agg", handlerAgg)
 
 	cliArgs := os.Args
 

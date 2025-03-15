@@ -91,7 +91,7 @@ func handlerResetUsers(s *state, cmd command) error {
 
 	fmt.Println("Users reset")
 
-	return err
+	return nil
 }
 
 func handlerGetUsers(s *state, cmd command) error {
@@ -114,5 +114,17 @@ func handlerGetUsers(s *state, cmd command) error {
 		}
 	}
 
-	return err
+	return nil
+}
+
+func handlerAgg(s *state, cmd command) error {
+	feed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	if err != nil {
+		return fmt.Errorf("error fetching feed: %w", err)
+	}
+
+	fmt.Printf("%+v\n", feed)
+
+	return nil
+}
 }
