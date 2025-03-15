@@ -1,0 +1,75 @@
+package main
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"log"
+	"os"
+	"time"
+
+	"github.com/ayulemd/gator/internal/database"
+	"github.com/google/uuid"
+	"github.com/lib/pq"
+)
+
+func handlerLogin(s *state, cmd command) error {
+	if len(cmd.args) == 0 {
+		return errors.New("username required")
+	}
+
+	user, err := s.db.GetUser(context.Background(), cmd.args[0])
+	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			fmt.Println(pqErr.Code, pqErr.Message)
+			os.Exit(1)
+		}
+	}
+
+	if user.Name == "" {
+		log.Printf("user does not exist")
+		os.Exit(1)
+	}
+
+	err = s.cfg.SetUser(user.Name)
+	if err != nil {
+		return errors.New("unable to set user")
+	}
+
+	fmt.Printf("User set to %s\n", user.Name)
+
+	return nil
+}
+
+func handlerRegister(s *state, cmd command) error {
+	if len(cmd.args) == 0 {
+		return errors.New("username required")
+	}
+
+	userParams := database.CreateUserParams{
+		ID:        uuid.New(),
+		CreatedAt: sql.NullTime{Time: time.Now(), Valid: true},
+		UpdatedAt: sql.NullTime{Time: time.Now(), Valid: true},
+		Name:      cmd.args[0],
+	}
+
+	user, err := s.db.CreateUser(context.Background(), userParams)
+	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			if pqErr.Code == "23505" {
+				fmt.Println(pqErr.Message)
+				os.Exit(1)
+			}
+		}
+	}
+
+	err = s.cfg.SetUser(user.Name)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Created user: %+v", user)
+
+	return nil
+}
