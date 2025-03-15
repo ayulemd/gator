@@ -93,3 +93,26 @@ func handlerResetUsers(s *state, cmd command) error {
 
 	return err
 }
+
+func handlerGetUsers(s *state, cmd command) error {
+	users, err := s.db.GetUsers(context.Background())
+	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			fmt.Println(pqErr.Message)
+		} else {
+			fmt.Println("unknown error when listing users")
+		}
+
+		os.Exit(1)
+	}
+
+	for _, user := range users {
+		if user.Name == s.cfg.CurrentUserName {
+			fmt.Printf("* %s (current)\n", user.Name)
+		} else {
+			fmt.Println("*", user.Name)
+		}
+	}
+
+	return err
+}
