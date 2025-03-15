@@ -1,0 +1,7 @@
+[sqlfluff]
+dialect = postgres
+rules = core
+
+[sqlfluff:indentation]
+indented_joins = True
+indented_using_on = True
