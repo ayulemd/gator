@@ -127,4 +127,32 @@ func handlerAgg(s *state, cmd command) error {
 
 	return nil
 }
+
+func handlerAddFeed(s *state, cmd command) error {
+	if len(cmd.args) != 2 {
+		return errors.New("CLI usage: gator addfeed [name] [url]")
+	}
+
+	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("error fetching user: %w", err)
+	}
+
+	feedParams := database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: sql.NullTime{Time: time.Now(), Valid: true},
+		UpdatedAt: sql.NullTime{Time: time.Now(), Valid: true},
+		Name:      sql.NullString{String: cmd.args[0], Valid: true},
+		Url:       sql.NullString{String: cmd.args[1], Valid: true},
+		UserID:    uuid.NullUUID{UUID: user.ID, Valid: true},
+	}
+
+	feed, err := s.db.CreateFeed(context.Background(), feedParams)
+	if err != nil {
+		return fmt.Errorf("error creating feed: %w", err)
+	}
+
+	fmt.Printf("%+v\n", feed)
+
+	return nil
 }
