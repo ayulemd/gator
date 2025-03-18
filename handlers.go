@@ -156,3 +156,16 @@ func handlerAddFeed(s *state, cmd command) error {
 
 	return nil
 }
+
+func handlerFeeds(s *state, cmd command) error {
+	feeds, err := s.db.ListFeeds(context.Background())
+	if err != nil {
+		return fmt.Errorf("error listing feeds: %w", err)
+	}
+
+	for _, feed := range feeds {
+		fmt.Printf("Feed: %s\nURL: %s\nAdded by: %s\n\n", feed.FeedName.String, feed.Url.String, feed.UserName)
+	}
+
+	return nil
+}
