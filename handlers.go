@@ -128,14 +128,9 @@ func handlerAgg(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.args) != 2 {
 		return errors.New("CLI usage: gator addfeed [name] [url]")
-	}
-
-	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("error fetching user: %w", err)
 	}
 
 	feedParams := database.CreateFeedParams{
@@ -157,7 +152,7 @@ func handlerAddFeed(s *state, cmd command) error {
 		args: []string{cmd.args[1]},
 	}
 
-	handlerFollow(s, newCmd)
+	handlerFollow(s, newCmd, user)
 
 	fmt.Printf("%+v\n", feed)
 
@@ -177,7 +172,7 @@ func handlerFeeds(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, user database.User) error {
 	if len(cmd.args) < 1 {
 		return errors.New("CLI usage: gator follow [url]")
 	}
@@ -185,11 +180,6 @@ func handlerFollow(s *state, cmd command) error {
 	urlString := sql.NullString{
 		String: cmd.args[0],
 		Valid:  true,
-	}
-
-	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("error fetching current user ID: %w", err)
 	}
 
 	feedId, err := s.db.FeedIdFromUrl(context.Background(), urlString)
@@ -215,12 +205,7 @@ func handlerFollow(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollowing(s *state, cmd command) error {
-	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("error fetching current user ID: %w", err)
-	}
-
+func handlerFollowing(s *state, cmd command, user database.User) error {
 	followedFeeds, err := s.db.GetFeedFollowsForUser(context.Background(), uuid.NullUUID{UUID: user.ID, Valid: true})
 	if err != nil {
 		return fmt.Errorf("error listing followed feeds: %w", err)
