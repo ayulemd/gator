@@ -152,6 +152,13 @@ func handlerAddFeed(s *state, cmd command) error {
 		return fmt.Errorf("error creating feed: %w", err)
 	}
 
+	newCmd := command{
+		name: "addfeed",
+		args: []string{cmd.args[1]},
+	}
+
+	handlerFollow(s, newCmd)
+
 	fmt.Printf("%+v\n", feed)
 
 	return nil
@@ -165,6 +172,65 @@ func handlerFeeds(s *state, cmd command) error {
 
 	for _, feed := range feeds {
 		fmt.Printf("Feed: %s\nURL: %s\nAdded by: %s\n\n", feed.FeedName.String, feed.Url.String, feed.UserName)
+	}
+
+	return nil
+}
+
+func handlerFollow(s *state, cmd command) error {
+	if len(cmd.args) < 1 {
+		return errors.New("CLI usage: gator follow [url]")
+	}
+
+	urlString := sql.NullString{
+		String: cmd.args[0],
+		Valid:  true,
+	}
+
+	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("error fetching current user ID: %w", err)
+	}
+
+	feedId, err := s.db.FeedIdFromUrl(context.Background(), urlString)
+	if err != nil {
+		return fmt.Errorf("error fetching feed ID from URL: %w", err)
+	}
+
+	feedFollowParams := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: sql.NullTime{Time: time.Now(), Valid: true},
+		UpdatedAt: sql.NullTime{Time: time.Now(), Valid: true},
+		UserID:    uuid.NullUUID{UUID: user.ID, Valid: true},
+		FeedID:    uuid.NullUUID{UUID: feedId, Valid: true},
+	}
+
+	followedFeed, err := s.db.CreateFeedFollow(context.Background(), feedFollowParams)
+	if err != nil {
+		return fmt.Errorf("error following feed: %w", err)
+	}
+
+	fmt.Printf("%s followed \"%s\"\n", followedFeed.UserName, followedFeed.FeedName.String)
+
+	return nil
+}
+
+func handlerFollowing(s *state, cmd command) error {
+	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("error fetching current user ID: %w", err)
+	}
+
+	followedFeeds, err := s.db.GetFeedFollowsForUser(context.Background(), uuid.NullUUID{UUID: user.ID, Valid: true})
+	if err != nil {
+		return fmt.Errorf("error listing followed feeds: %w", err)
+	}
+
+	fmt.Println("User:", user.Name)
+	fmt.Println("Feeds followed:")
+
+	for _, feed := range followedFeeds {
+		fmt.Println("*", feed.FeedName.String)
 	}
 
 	return nil
